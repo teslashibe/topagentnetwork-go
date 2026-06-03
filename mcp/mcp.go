@@ -11,8 +11,9 @@ func (Provider) Platform() string { return "topagentnetwork" }
 
 // Tools returns every MCP tool, in registration order.
 func (Provider) Tools() []mcptool.Tool {
-	out := make([]mcptool.Tool, 0, len(authTools)+len(queryTools))
+	out := make([]mcptool.Tool, 0, len(authTools)+len(introspectTools)+len(queryTools))
 	out = append(out, authTools...)
+	out = append(out, introspectTools...)
 	out = append(out, queryTools...)
 	return out
 }

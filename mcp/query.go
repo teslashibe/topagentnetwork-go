@@ -25,7 +25,7 @@ func query(ctx context.Context, c *tan.Client, in QueryInput) (any, error) {
 var queryTools = []mcptool.Tool{
 	mcptool.Define[*tan.Client, QueryInput](
 		"topagentnetwork_query",
-		"Execute an arbitrary GraphQL query/mutation against api.topagentnetwork.app/graphql. 78 queries and 139 mutations available; see TAN introspection for the schema.",
+		"Run a raw GraphQL query/mutation on TAN. Call topagentnetwork_introspect first for valid fields/args (no edges/first).",
 		"Query",
 		query,
 	),
