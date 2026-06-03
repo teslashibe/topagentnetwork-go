@@ -99,8 +99,8 @@ introspection but not executed (write side effects).
 | `topagentnetwork_list_conversations`     | ✅ Fully tested    | Returned 33 conversations with last message.          |
 | `topagentnetwork_get_conversation`       | ✅ Fully tested    | Returned a thread with 2 participants + messages.     |
 | `topagentnetwork_mark_conversation_read` | ✅ Fully tested    | `ConversationMessagesMarkedAsRead` returned.          |
+| `topagentnetwork_reply_conversation`     | ✅ Fully tested    | Sent a real reply (msg `e9ecb0df…`); returned `ConversationReply`. |
 | `topagentnetwork_login` / `_get_me`      | ⚠️ Untested (v0.2) | Pre-existing; not re-run this round.                  |
-| `topagentnetwork_reply_conversation`     | 🟡 Schema-validated | Input/result confirmed; not fired (real message).   |
 
 Unit test coverage: `introspect_test.go` pins SDL rendering (incl. `[ID!]!`)
 and the root-Query digest. Run `go test ./...`.
@@ -110,7 +110,7 @@ and the root-Query digest. Run `go test ./...`.
 - [ ] Capture programmatic login HAR from a real browser session and
       replicate the `/api/login` flow (cookies + headers required).
 - [ ] Live-test `topagentnetwork_login` / `topagentnetwork_get_me` and the
-      write tools (`reply`, broadcast create/delete) against a safe account.
+      broadcast write tools (create/delete) against a safe account.
 - [ ] Typed wrappers for more high-value queries:
       `alertsForCurrentUser`, `notificationsForCurrentUserV5`,
       `messageBroadcastsForCurrentUser`, `currentAccountV5`,
