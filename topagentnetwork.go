@@ -36,6 +36,7 @@ const (
 	webBaseURL       = "https://topagentnetwork.app"
 	apiBaseURL       = "https://api.topagentnetwork.app"
 	graphqlPath      = "/graphql"
+	refreshPath      = "/api/refresh"
 	defaultUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 	defaultRetries   = 3
 	defaultRetryBase = 500 * time.Millisecond
@@ -54,6 +55,15 @@ type Client struct {
 	lastReqAt time.Time
 
 	authMu sync.RWMutex
+
+	// tokenMu guards the cached GraphQL bearer token. TAN's GraphQL API
+	// (api.topagentnetwork.app) authenticates via a short-lived (~1h)
+	// RS256 access token, NOT the session cookie. The token is minted by
+	// POSTing the session cookies to topagentnetwork.app/api/refresh; we
+	// cache it and refresh shortly before expiry. See auth_token.go.
+	tokenMu     sync.Mutex
+	accessToken string
+	tokenExp    time.Time
 }
 
 // Option configures a Client.

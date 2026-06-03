@@ -24,7 +24,24 @@ func (c *Client) Query(ctx context.Context, op GraphQLRequest) (*GraphQLResponse
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidParams, err)
 	}
-	raw, _, err := c.doRetried(ctx, http.MethodPost, apiBaseURL+graphqlPath, body, "application/json")
+	// The API authenticates via a bearer access token (minted from the
+	// session cookie), not the cookie itself. A cached token that the
+	// server rejects (locally still "valid" but revoked, or rotated) is
+	// re-minted once before giving up.
+	out, err := c.queryOnce(ctx, body)
+	if errors.Is(err, ErrUnauthorized) {
+		c.invalidateToken()
+		out, err = c.queryOnce(ctx, body)
+	}
+	return out, err
+}
+
+func (c *Client) queryOnce(ctx context.Context, body []byte) (*GraphQLResponse, error) {
+	token, err := c.ensureToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	raw, _, err := c.doRetried(ctx, http.MethodPost, apiBaseURL+graphqlPath, body, "application/json", token)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +61,7 @@ func (c *Client) Query(ctx context.Context, op GraphQLRequest) (*GraphQLResponse
 	return &out, nil
 }
 
-func (c *Client) doRetried(ctx context.Context, method, rawURL string, body []byte, contentType string) ([]byte, int, error) {
+func (c *Client) doRetried(ctx context.Context, method, rawURL string, body []byte, contentType, bearer string) ([]byte, int, error) {
 	var lastErr error
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
 		if attempt > 0 {
@@ -55,7 +72,7 @@ func (c *Client) doRetried(ctx context.Context, method, rawURL string, body []by
 			case <-time.After(wait):
 			}
 		}
-		raw, status, err := c.doRequest(ctx, method, rawURL, body, contentType)
+		raw, status, err := c.doRequest(ctx, method, rawURL, body, contentType, bearer)
 		if err == nil {
 			return raw, status, nil
 		}
@@ -72,7 +89,7 @@ func (c *Client) doRetried(ctx context.Context, method, rawURL string, body []by
 	return nil, 0, lastErr
 }
 
-func (c *Client) doRequest(ctx context.Context, method, rawURL string, body []byte, contentType string) ([]byte, int, error) {
+func (c *Client) doRequest(ctx context.Context, method, rawURL string, body []byte, contentType, bearer string) ([]byte, int, error) {
 	c.waitForGap(ctx)
 	if ctx.Err() != nil {
 		return nil, 0, ctx.Err()
@@ -88,6 +105,9 @@ func (c *Client) doRequest(ctx context.Context, method, rawURL string, body []by
 		return nil, 0, fmt.Errorf("%w: %v", ErrRequestFailed, err)
 	}
 	c.setCommonHeaders(req, contentType)
+	if bearer != "" {
+		req.Header.Set("Authorization", "Bearer "+bearer)
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
