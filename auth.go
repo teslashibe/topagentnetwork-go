@@ -30,14 +30,15 @@ func (c *Client) Login(ctx context.Context) (*User, error) {
 func (c *Client) GetMe(ctx context.Context) (*User, error) {
 	op := GraphQLRequest{
 		OperationName: "CurrentlyLoggedInAgent",
+		// TAN's Agent type dropped email/slug/agentType (the API now rejects
+		// them with "Cannot query field ... on type Agent"). Request only the
+		// fields the current schema still exposes; GetMe's primary job is an
+		// auth/liveness check, so id/firstName/lastName are sufficient.
 		Query: `query CurrentlyLoggedInAgent {
   currentlyLoggedInAgent {
     id
     firstName
     lastName
-    email
-    slug
-    agentType
   }
 }`,
 	}
